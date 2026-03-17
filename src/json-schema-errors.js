@@ -13,7 +13,7 @@ import { Localization } from "./localization.js";
  */
 
 /** @type API.jsonSchemaErrors */
-export async function jsonSchemaErrors(errorOutput, schemaUri, instance, options = {}) {
+export const jsonSchemaErrors = async (errorOutput, schemaUri, instance, options = {}) => {
   const normalizedErrors = await normalizedOutput(instance, errorOutput, schemaUri);
   const rootInstance = Instance.fromJs(instance);
   const localization = await Localization.forLocale(options.language ?? "en-US");
