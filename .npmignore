@@ -1,5 +1,6 @@
 .github/
-eslint.config.js
+.gitattributes
+oxlint.config.js
 src/test-suite/
 **/*.test.js
 coverage/
