@@ -1,8 +1,9 @@
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
+import * as Pact from "@hyperjump/pact";
 import { getErrors } from "../json-schema-errors.js";
 
 /**
- * @import { ErrorHandler, ErrorObject } from "../index.d.ts"
+ * @import { ErrorHandler, ErrorObject, InstanceOutput } from "../index.d.ts"
  */
 
 /** @type ErrorHandler */
@@ -16,21 +17,45 @@ const oneOfErrorHandler = async (normalizedErrors, instance, localization) => {
       continue;
     }
 
+    const propertyLocations = Pact.pipe(
+      Instance.values(instance),
+      Pact.map(Instance.uri),
+      Pact.collectArray
+    );
+
+    const discriminators = propertyLocations.filter((propertyLocation) => {
+      return oneOf.some((alternative) => isPassingProperty(alternative[propertyLocation]));
+    });
+
     const alternatives = [];
     const instanceLocation = Instance.uri(instance);
     let matchCount = 0;
 
     for (const alternative of oneOf) {
-      const typeErrors = alternative[instanceLocation]?.["https://json-schema.org/keyword/type"];
-      const match = !typeErrors || Object.values(typeErrors).every((isValid) => isValid);
+      // Filter alternatives whose declared type doesn't match the instance type
+      const typeResults = alternative[instanceLocation]?.["https://json-schema.org/keyword/type"];
+      if (typeResults && !Object.values(typeResults).every((isValid) => isValid)) {
+        continue;
+      }
 
-      if (match) {
-        const alternativeErrors = await getErrors(alternative, instance, localization);
-        if (alternativeErrors.length) {
-          alternatives.push(alternativeErrors);
-        } else {
-          matchCount++;
+      if (Instance.typeOf(instance) === "object") {
+        // Filter alternative if it has no declared properties in common with the instance
+        if (!propertyLocations.some((propertyLocation) => propertyLocation in alternative)) {
+          continue;
         }
+
+        // Filter alternative if it has failing properties that are declared and passing in another alternative
+        if (discriminators.some((propertyLocation) => !isPassingProperty(alternative[propertyLocation]))) {
+          continue;
+        }
+      }
+
+      // The alternative passed all the filters
+      const alternativeErrors = await getErrors(alternative, instance, localization);
+      if (alternativeErrors.length) {
+        alternatives.push(alternativeErrors);
+      } else {
+        matchCount++;
       }
     }
 
@@ -58,6 +83,23 @@ const oneOfErrorHandler = async (normalizedErrors, instance, localization) => {
   }
 
   return errors;
+};
+
+/** @type (alternative: InstanceOutput | undefined) => boolean */
+const isPassingProperty = (propertyOutput) => {
+  if (!propertyOutput) {
+    return false;
+  }
+
+  for (const keywordUri in propertyOutput) {
+    for (const schemaLocation in propertyOutput[keywordUri]) {
+      if (propertyOutput[keywordUri][schemaLocation] !== true) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 };
 
 export default oneOfErrorHandler;
