@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /**
@@ -7,7 +5,11 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
  */
 
 /** @type ErrorHandler */
-const maxPropertiesErrorHandler = async (normalizedErrors, instance, localization) => {
+const maxPropertiesErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  if (!resolver?.getCompiledKeywordValue) {
+    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
+  }
+
   /** @type ErrorObject[] */
   const errors = [];
   let lowestMaxProperties = Infinity;
@@ -17,8 +19,7 @@ const maxPropertiesErrorHandler = async (normalizedErrors, instance, localizatio
       continue;
     }
 
-    const keyword = await getSchema(schemaLocation);
-    const maxProperties = /** @type number */ (Schema.value(keyword));
+    const maxProperties = /** @type number */ (resolver.getCompiledKeywordValue(schemaLocation));
 
     if (maxProperties < lowestMaxProperties) {
       lowestMaxProperties = maxProperties;

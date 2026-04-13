@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /**
@@ -7,7 +5,11 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
  */
 
 /** @type ErrorHandler */
-const multipleOfErrorHandler = async (normalizedErrors, instance, localization) => {
+const multipleOfErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  if (!resolver?.getCompiledKeywordValue) {
+    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
+  }
+
   /** @type ErrorObject[] */
   const errors = [];
 
@@ -22,8 +24,7 @@ const multipleOfErrorHandler = async (normalizedErrors, instance, localization) 
       hasError = true;
     }
 
-    const keyword = await getSchema(schemaLocation);
-    const multipleOf = /** @type number */ (Schema.value(keyword));
+    const multipleOf = /** @type number */ (resolver.getCompiledKeywordValue(schemaLocation));
 
     combinedMultipleOf = combinedMultipleOf === null ? multipleOf : lcm(combinedMultipleOf, multipleOf);
     schemaLocations.push(schemaLocation);

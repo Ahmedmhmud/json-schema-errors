@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 import jsonStringify from "json-stringify-deterministic";
 
@@ -10,7 +8,11 @@ import jsonStringify from "json-stringify-deterministic";
 const ALL_TYPES = new Set(["null", "boolean", "number", "string", "array", "object", "integer"]);
 
 /** @type {ErrorHandler} */
-const typeConstEnumErrorHandler = async (normalizedErrors, instance, localization) => {
+const typeConstEnumErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  if (!resolver?.getCompiledKeywordValue) {
+    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
+  }
+
   let allowedTypes = new Set(ALL_TYPES);
   /** @type {string[]} */
   const failedTypeLocations = [];
@@ -19,9 +21,8 @@ const typeConstEnumErrorHandler = async (normalizedErrors, instance, localizatio
     if (!normalizedErrors["https://json-schema.org/keyword/type"][schemaLocation]) {
       failedTypeLocations.push(schemaLocation);
 
-      const keyword = await getSchema(schemaLocation);
       /** @type {string | string[]} */
-      const value = Schema.value(keyword);
+      const value = /** @type {string | string[]} */ (resolver.getCompiledKeywordValue(schemaLocation));
       const types = Array.isArray(value) ? value : [value];
       /** @type {Set<string>} */
       const keywordTypes = new Set(types);
@@ -52,10 +53,11 @@ const typeConstEnumErrorHandler = async (normalizedErrors, instance, localizatio
       failedConstLocations.push(schemaLocation);
     }
 
-    const keyword = await getSchema(schemaLocation);
     const keywordJson = new Set();
-    if (allowedTypes.has(Schema.typeOf(keyword))) {
-      keywordJson.add(jsonStringify(Schema.value(keyword)));
+    const constValueJson = /** @type string */ (resolver.getCompiledKeywordValue(schemaLocation));
+    const constValue = JSON.parse(constValueJson);
+    if (allowedTypes.has(jsonTypeOf(constValue))) {
+      keywordJson.add(constValueJson);
     } else {
       typeFiltered = true;
     }
@@ -69,11 +71,12 @@ const typeConstEnumErrorHandler = async (normalizedErrors, instance, localizatio
       failedEnumLocations.push(schemaLocation);
     }
 
-    const keyword = await getSchema(schemaLocation);
     const keywordJson = new Set();
-    for await (const enumValueNode of Schema.iter(keyword)) {
-      if (allowedTypes.has(Schema.typeOf(enumValueNode))) {
-        keywordJson.add(jsonStringify(Schema.value(enumValueNode)));
+    const enumValuesJson = /** @type string[] */ (resolver.getCompiledKeywordValue(schemaLocation));
+    for (const enumValueJson of enumValuesJson) {
+      const enumValue = JSON.parse(enumValueJson);
+      if (allowedTypes.has(jsonTypeOf(enumValue))) {
+        keywordJson.add(enumValueJson);
       } else {
         typeFiltered = true;
       }
@@ -112,6 +115,23 @@ const typeConstEnumErrorHandler = async (normalizedErrors, instance, localizatio
       schemaLocations: failedTypeLocations
     }];
   }
+};
+
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+const jsonTypeOf = (value) => {
+  if (value === null) {
+    return "null";
+  }
+  if (Array.isArray(value)) {
+    return "array";
+  }
+  if (typeof value === "number") {
+    return "number";
+  }
+  return typeof value;
 };
 
 export default typeConstEnumErrorHandler;

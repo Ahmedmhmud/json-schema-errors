@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /**
@@ -7,7 +5,11 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
  */
 
 /** @type ErrorHandler */
-const formatErrorHandler = async (normalizedErrors, instance, localization) => {
+const formatErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  if (!resolver?.getCompiledKeywordValue) {
+    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
+  }
+
   /** @type ErrorObject[] */
   const errors = [];
 
@@ -26,8 +28,7 @@ const formatErrorHandler = async (normalizedErrors, instance, localization) => {
         continue;
       }
 
-      const keyword = await getSchema(schemaLocation);
-      const format = /** @type string */ (Schema.value(keyword));
+      const format = /** @type string */ (resolver.getCompiledKeywordValue(schemaLocation));
 
       errors.push({
         message: localization.getFormatErrorMessage(format),

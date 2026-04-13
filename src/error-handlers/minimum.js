@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /**
@@ -7,7 +5,16 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
  */
 
 /** @type ErrorHandler */
-const minimumErrorHandler = async (normalizedErrors, instance, localization) => {
+const minimumErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  /** @type {{
+   *   getCompiledKeywordValue?: (schemaLocation: string) => unknown;
+   *   getSiblingKeywordValue?: (schemaLocation: string, siblingKeywordUri: string) =>
+   *     { keywordLocation: string; keywordValue: unknown } | undefined
+   * } | undefined} */
+  if (!resolver?.getCompiledKeywordValue || !resolver.getSiblingKeywordValue) {
+    throw new Error("Missing resolver functions in error handler context");
+  }
+
   let highestMinimum = -Infinity;
   let isExclusive = false;
   /** @type string[] */
@@ -18,8 +25,7 @@ const minimumErrorHandler = async (normalizedErrors, instance, localization) => 
       continue;
     }
 
-    const keyword = await getSchema(schemaLocation);
-    const minimum = /** @type number */ (Schema.value(keyword));
+    const minimum = /** @type number */ (resolver.getCompiledKeywordValue(schemaLocation));
 
     if (minimum > highestMinimum) {
       highestMinimum = minimum;
@@ -33,8 +39,7 @@ const minimumErrorHandler = async (normalizedErrors, instance, localization) => 
       continue;
     }
 
-    const keyword = await getSchema(schemaLocation);
-    const exclusiveMinimum = /** @type number */ (Schema.value(keyword));
+    const exclusiveMinimum = /** @type number */ (resolver.getCompiledKeywordValue(schemaLocation));
 
     if (exclusiveMinimum > highestMinimum) {
       highestMinimum = exclusiveMinimum;
@@ -47,25 +52,14 @@ const minimumErrorHandler = async (normalizedErrors, instance, localization) => 
       continue;
     }
 
-    const parentLocation = pointerPop(schemaLocation);
-
-    let exclusiveLocation = "";
-    for (const schemaLocation in normalizedErrors["https://json-schema.org/keyword/draft-04/exclusiveMinimum"]) {
-      const exclusiveParentLocation = pointerPop(schemaLocation);
-      if (exclusiveParentLocation === parentLocation) {
-        const exclusiveNode = await getSchema(schemaLocation);
-        if (Schema.value(exclusiveNode)) {
-          exclusiveLocation = schemaLocation;
-        }
-        break;
-      }
-    }
-
-    const keywordNode = await getSchema(schemaLocation);
-    const minimum = /** @type number */ (Schema.value(keywordNode));
+    const draft04Minimum = /** @type [number, boolean] */ (resolver.getCompiledKeywordValue(schemaLocation));
+    const minimum = draft04Minimum[0];
+    const exclusive = draft04Minimum[1];
+    const exclusiveKeyword = resolver.getSiblingKeywordValue(schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMinimum");
+    const exclusiveLocation = exclusive && exclusiveKeyword ? exclusiveKeyword.keywordLocation : "";
     if (minimum > highestMinimum) {
       highestMinimum = minimum;
-      isExclusive = !!exclusiveLocation;
+      isExclusive = exclusive;
       schemaLocations = exclusiveLocation ? [schemaLocation, exclusiveLocation] : [schemaLocation];
     }
   }
@@ -86,8 +80,5 @@ const minimumErrorHandler = async (normalizedErrors, instance, localization) => 
     }];
   }
 };
-
-/** @type (pointer: string) => string */
-const pointerPop = (pointer) => pointer.replace(/\/[^/]+$/, "");
 
 export default minimumErrorHandler;

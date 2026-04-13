@@ -1,5 +1,3 @@
-import { getSchema } from "@hyperjump/json-schema/experimental";
-import * as Schema from "@hyperjump/browser";
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /**
@@ -7,7 +5,15 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
  */
 
 /** @type ErrorHandler */
-const containsErrorHandler = async (normalizedErrors, instance, localization) => {
+const containsErrorHandler = (normalizedErrors, instance, localization, resolver) => {
+  /** @type {{
+   *   getSiblingKeywordValue?: (schemaLocation: string, siblingKeywordUri: string) =>
+   *     { keywordLocation: string; keywordValue: unknown } | undefined
+   * } | undefined} */
+  if (!resolver?.getSiblingKeywordValue) {
+    throw new Error("Missing resolver.getSiblingKeywordValue in error handler context");
+  }
+
   /** @type ErrorObject[] */
   const errors = [];
 
@@ -27,24 +33,16 @@ const containsErrorHandler = async (normalizedErrors, instance, localization) =>
 
       /** @type ContainsRange */
       const range = {};
-      const parentLocation = pointerPop(schemaLocation);
-
-      for (const minContainsLocation in normalizedErrors["https://json-schema.org/keyword/minContains"]) {
-        if (pointerPop(minContainsLocation) === parentLocation) {
-          const minContainsNode = await getSchema(minContainsLocation);
-          range.minContains = /** @type number */ (Schema.value(minContainsNode));
-          schemaLocations.push(minContainsLocation);
-          break;
-        }
+      const minContains = resolver.getSiblingKeywordValue(schemaLocation, "https://json-schema.org/keyword/minContains");
+      if (minContains) {
+        range.minContains = /** @type number */ (minContains.keywordValue);
+        schemaLocations.push(minContains.keywordLocation);
       }
 
-      for (const maxContainsLocation in normalizedErrors["https://json-schema.org/keyword/maxContains"]) {
-        if (pointerPop(maxContainsLocation) === parentLocation) {
-          const maxContainsNode = await getSchema(maxContainsLocation);
-          range.maxContains = /** @type number */ (Schema.value(maxContainsNode));
-          schemaLocations.push(maxContainsLocation);
-          break;
-        }
+      const maxContains = resolver.getSiblingKeywordValue(schemaLocation, "https://json-schema.org/keyword/maxContains");
+      if (maxContains) {
+        range.maxContains = /** @type number */ (maxContains.keywordValue);
+        schemaLocations.push(maxContains.keywordLocation);
       }
 
       errors.push({
@@ -57,8 +55,5 @@ const containsErrorHandler = async (normalizedErrors, instance, localization) =>
 
   return errors;
 };
-
-/** @type (pointer: string) => string */
-const pointerPop = (pointer) => pointer.replace(/\/[^/]+$/, "");
 
 export default containsErrorHandler;
