@@ -188,15 +188,6 @@ export const getErrors = (normalizedErrors, rootInstance, localization, resolver
   /** @type API.ErrorObject[] */
   const errors = [];
 
-  resolver ??= {
-    getCompiledKeywordValue: () => {
-      throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
-    },
-    getSiblingKeywordValue: () => {
-      throw new Error("Missing resolver.getSiblingKeywordValue in error handler context");
-    }
-  };
-
   for (const instanceLocation in normalizedErrors) {
     const instance = /** @type JsonNode */ (Instance.get(instanceLocation, rootInstance));
     for (const errorHandler of errorHandlers) {

@@ -8,10 +8,6 @@ const ALL_TYPES = new Set(["null", "boolean", "number", "string", "array", "obje
 
 /** @type {ErrorHandler} */
 const typeConstEnumErrorHandler = (normalizedErrors, instance, localization, resolver) => {
-  if (!resolver?.getCompiledKeywordValue) {
-    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
-  }
-
   let allowedTypes = new Set(ALL_TYPES);
   /** @type {string[]} */
   const failedTypeLocations = [];

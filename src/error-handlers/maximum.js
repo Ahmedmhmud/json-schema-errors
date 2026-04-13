@@ -6,10 +6,6 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /** @type ErrorHandler */
 const maximumErrorHandler = (normalizedErrors, instance, localization, resolver) => {
-  if (!resolver?.getCompiledKeywordValue || !resolver.getSiblingKeywordValue) {
-    throw new Error("Missing resolver functions in error handler context");
-  }
-
   let lowestMaximum = Infinity;
   let isExclusive = false;
 

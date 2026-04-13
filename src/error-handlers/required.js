@@ -7,10 +7,6 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /** @type ErrorHandler */
 const requiredErrorHandler = (normalizedErrors, instance, localization, resolver) => {
-  if (!resolver?.getCompiledKeywordValue) {
-    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
-  }
-
   /** @type {Set<string>} */
   const allMissingRequired = new Set();
   const allSchemaLocations = [];

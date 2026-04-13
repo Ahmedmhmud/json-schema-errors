@@ -6,10 +6,6 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
 
 /** @type ErrorHandler */
 const minLengthErrorHandler = (normalizedErrors, instance, localization, resolver) => {
-  if (!resolver?.getCompiledKeywordValue) {
-    throw new Error("Missing resolver.getCompiledKeywordValue in error handler context");
-  }
-
   /** @type ErrorObject[] */
   const errors = [];
   let highestMinLength = -Infinity;
