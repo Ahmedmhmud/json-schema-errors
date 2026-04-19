@@ -207,7 +207,7 @@ export const getCompiledKeywordValue = (ast, schemaLocation) => {
 };
 
 /** @type (ast: AST, schemaLocation: string, siblingKeywordUri: string) => string | undefined */
-export const getSiblingKeywordValue = (ast, schemaLocation, siblingKeywordUri) => {
+export const getSiblingKeywordLocation = (ast, schemaLocation, siblingKeywordUri) => {
   const parentNode = getParentNode(ast, schemaLocation);
   if (!Array.isArray(parentNode)) {
     return undefined;

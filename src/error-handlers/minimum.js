@@ -1,5 +1,5 @@
 import * as Instance from "@hyperjump/json-schema/instance/experimental";
-import { getCompiledKeywordValue, getSiblingKeywordValue } from "../json-schema-errors.js";
+import { getCompiledKeywordValue, getSiblingKeywordLocation } from "../json-schema-errors.js";
 
 /**
  * @import { ErrorHandler } from "../index.d.ts"
@@ -47,11 +47,10 @@ const minimumErrorHandler = (normalizedErrors, instance, localization, ast) => {
     const draft04Minimum = /** @type [number, boolean] */ (getCompiledKeywordValue(ast, schemaLocation));
     const minimum = draft04Minimum[0];
     const exclusive = draft04Minimum[1];
-    const exclusiveKeywordLocation = getSiblingKeywordValue(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMinimum");
-    const exclusiveLocation = exclusive && exclusiveKeywordLocation ? exclusiveKeywordLocation : "";
     if (minimum > highestMinimum) {
       highestMinimum = minimum;
       isExclusive = exclusive;
+      const exclusiveLocation = exclusive ? getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMinimum") : "";
       schemaLocations = exclusiveLocation ? [schemaLocation, exclusiveLocation] : [schemaLocation];
     }
   }
