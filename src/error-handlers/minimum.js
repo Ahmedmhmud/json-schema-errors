@@ -39,19 +39,21 @@ const minimumErrorHandler = (normalizedErrors, instance, localization, ast) => {
       schemaLocations = [schemaLocation];
     }
   }
+
   for (const schemaLocation in normalizedErrors["https://json-schema.org/keyword/draft-04/minimum"]) {
     if (normalizedErrors["https://json-schema.org/keyword/draft-04/minimum"][schemaLocation]) {
       continue;
     }
 
-    const draft04Minimum = /** @type [number, boolean] */ (getCompiledKeywordValue(ast, schemaLocation));
-    const minimum = draft04Minimum[0];
-    const exclusive = draft04Minimum[1];
+    const [minimum, exclusive] = /** @type [number, boolean] */ (getCompiledKeywordValue(ast, schemaLocation));
     if (minimum > highestMinimum) {
       highestMinimum = minimum;
       isExclusive = exclusive;
-      const exclusiveLocation = exclusive ? getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMinimum") : "";
-      schemaLocations = exclusiveLocation ? [schemaLocation, exclusiveLocation] : [schemaLocation];
+      schemaLocations = [schemaLocation];
+      if (exclusive) {
+        const exclusiveLocation = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMinimum");
+        schemaLocations.push(exclusiveLocation);
+      }
     }
   }
 

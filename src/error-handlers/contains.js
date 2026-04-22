@@ -2,6 +2,7 @@ import * as Instance from "@hyperjump/json-schema/instance/experimental";
 import { getCompiledKeywordValue, getSiblingKeywordLocation } from "../json-schema-errors.js";
 
 /**
+ * @import { ContainsAst } from "../normalization-handlers/contains.js"
  * @import { ContainsRange, ErrorHandler, ErrorObject } from "../index.d.ts"
  */
 
@@ -24,20 +25,22 @@ const containsErrorHandler = (normalizedErrors, instance, localization, ast) => 
       /** @type string[] */
       const schemaLocations = [schemaLocation];
 
-      const containsRange = /** @type {ContainsRange} */ (getCompiledKeywordValue(ast, schemaLocation));
+      const contains = /** @type ContainsAst */ (getCompiledKeywordValue(ast, schemaLocation));
 
       /** @type ContainsRange */
       const range = {};
-      const minContains = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/minContains");
-      if (minContains) {
-        range.minContains = containsRange.minContains;
-        schemaLocations.push(minContains);
-      }
+      if (typeof contains !== "string") {
+        if (contains.minContains !== 1) {
+          range.minContains = contains.minContains;
+          const minContainsLocation = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/minContains");
+          schemaLocations.push(minContainsLocation);
+        }
 
-      const maxContains = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/maxContains");
-      if (maxContains) {
-        range.maxContains = containsRange.maxContains;
-        schemaLocations.push(maxContains);
+        if (contains.maxContains !== Number.MAX_SAFE_INTEGER) {
+          range.maxContains = contains.maxContains;
+          const maxContainsLocation = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/maxContains");
+          schemaLocations.push(maxContainsLocation);
+        }
       }
 
       errors.push({

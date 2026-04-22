@@ -43,15 +43,15 @@ const maximumErrorHandler = (normalizedErrors, instance, localization, ast) => {
       continue;
     }
 
-    const draft04Maximum = /** @type [number, boolean] */ (getCompiledKeywordValue(ast, schemaLocation));
-    const maximum = draft04Maximum[0];
-    const exclusive = draft04Maximum[1];
-
+    const [maximum, exclusive] = /** @type [number, boolean] */ (getCompiledKeywordValue(ast, schemaLocation));
     if (maximum < lowestMaximum) {
       lowestMaximum = maximum;
       isExclusive = exclusive;
-      const exclusiveLocation = exclusive ? getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMaximum") : "";
-      schemaLocations = exclusiveLocation ? [schemaLocation, exclusiveLocation] : [schemaLocation];
+      schemaLocations = [schemaLocation];
+      if (exclusive) {
+        const exclusiveLocation = getSiblingKeywordLocation(ast, schemaLocation, "https://json-schema.org/keyword/draft-04/exclusiveMaximum");
+        schemaLocations.push(exclusiveLocation);
+      }
     }
   }
 

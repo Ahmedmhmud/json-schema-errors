@@ -9,7 +9,7 @@ import { JsonSchemaErrorsOutputPlugin } from "./output-plugin.js";
 /**
  * @import * as API from "./index.d.ts"
  * @import { Browser } from "@hyperjump/browser";
- * @import { AST, SchemaDocument, CompiledSchema } from "@hyperjump/json-schema/experimental";
+ * @import { AST, SchemaDocument, CompiledSchema, Node } from "@hyperjump/json-schema/experimental";
  * @import { JsonNode } from "@hyperjump/json-schema/instance/experimental"
  */
 
@@ -19,7 +19,11 @@ export const jsonSchemaErrors = async (errorOutput, schemaUri, instance, options
   const schema = await getSchema(schemaUri);
   const errorIndex = await constructErrorIndex(errorOutput, schema);
   const { schemaUri: compiledSchemaUri, ast } = await compile(schema);
-  const normalizedErrors = evaluateSchema(compiledSchemaUri, rootInstance, { ast, errorIndex, plugins: [...ast.plugins] });
+  const normalizedErrors = evaluateSchema(compiledSchemaUri, rootInstance, {
+    ast,
+    errorIndex,
+    plugins: [...ast.plugins]
+  });
   const localization = await Localization.forLocale(options.locale ?? "en-US");
   return getErrors(normalizedErrors, rootInstance, localization, ast);
 };
@@ -64,11 +68,7 @@ const constructErrorIndex = async (outputUnit, schema, errorIndex = {}) => {
   return errorIndex;
 };
 
-/**
- * @param {Browser} schema
- * @param {string} keywordLocation
- * @returns {Promise<string>}
- */
+/** @type (schema: Browser, keywordLocation: string) => Promise<string> */
 async function toAbsoluteKeywordLocation(schema, keywordLocation) {
   if (keywordLocation.startsWith("#")) {
     keywordLocation = keywordLocation.slice(1);
@@ -189,7 +189,7 @@ export const getErrors = (normalizedErrors, rootInstance, localization, ast) => 
   return errors;
 };
 
-/** @type (ast: AST, schemaLocation: string) => unknown */
+/** @type (ast: AST, schemaLocation: string) => Node<unknown>[] | boolean | undefined */
 const getParentNode = (ast, schemaLocation) => {
   const parentLocation = schemaLocation.replace(/\/[^/]+$/, "");
   return ast[parentLocation];
@@ -198,23 +198,31 @@ const getParentNode = (ast, schemaLocation) => {
 /** @type (ast: AST, schemaLocation: string) => unknown */
 export const getCompiledKeywordValue = (ast, schemaLocation) => {
   const parentNode = getParentNode(ast, schemaLocation);
-  if (!Array.isArray(parentNode)) {
-    return undefined;
+  if (typeof parentNode === "boolean") {
+    return parentNode;
   }
 
-  const node = parentNode.find(([, keywordLocation]) => keywordLocation === schemaLocation);
-  return node?.[2];
+  const node = parentNode?.find(([, keywordLocation]) => keywordLocation === schemaLocation);
+  if (!node) {
+    throw Error("AST node not found");
+  }
+
+  return node[2];
 };
 
-/** @type (ast: AST, schemaLocation: string, siblingKeywordUri: string) => string | undefined */
+/** @type (ast: AST, schemaLocation: string, siblingKeywordUri: string) => string */
 export const getSiblingKeywordLocation = (ast, schemaLocation, siblingKeywordUri) => {
-  const parentNode = getParentNode(ast, schemaLocation);
-  if (!Array.isArray(parentNode)) {
-    return undefined;
+  let parentNode = getParentNode(ast, schemaLocation);
+  if (typeof parentNode === "boolean") {
+    parentNode = undefined;
   }
 
-  const node = parentNode.find(([keywordUri]) => keywordUri === siblingKeywordUri);
-  return node?.[1];
+  const node = parentNode?.find(([keywordUri]) => keywordUri === siblingKeywordUri);
+  if (!node) {
+    throw Error("AST node not found");
+  }
+
+  return node[1];
 };
 
 /**
