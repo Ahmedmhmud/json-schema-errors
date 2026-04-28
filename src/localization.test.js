@@ -1,8 +1,17 @@
-import { describe, expect, test } from "vitest";
+import { beforeAll, afterAll, describe, expect, test } from "vitest";
+import { translations } from "./translations.js";
 import { Localization } from "./localization.js";
 
 describe("Localization", () => {
   const fixtureLocale = "fx-TR";
+
+  beforeAll(() => {
+    translations[fixtureLocale] = `test = unsupported locale`;
+  });
+
+  afterAll(() => {
+    delete translations[fixtureLocale];
+  });
 
   test("unsupported locale", () => {
     expect(() => Localization.forLocale("xx-XX")).to.throw(Error);
