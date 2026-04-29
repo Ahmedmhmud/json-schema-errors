@@ -1,4 +1,4 @@
-import { translations } from "./translations.js";
+import { translations } from "./translations/index.js";
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 
 /**
@@ -24,18 +24,14 @@ export class Localization {
   /** @type (locale: string) => Localization */
   static forLocale(locale) {
     if (!localizationCache.has(locale)) {
-      try {
-        const ftl = translations[locale];
-        if (!ftl) {
-          throw Error(`No translation found for the ${locale} locale.`);
-        }
-        const resource = new FluentResource(ftl);
-        const bundle = new FluentBundle(locale);
-        bundle.addResource(resource);
-        localizationCache.set(locale, new Localization(locale, bundle));
-      } catch (error) {
-        throw Error(`The ${locale} locale is not supported.`, { cause: error });
+      const ftl = translations[locale];
+      if (!ftl) {
+        throw Error(`The ${locale} locale is not supported.`);
       }
+      const resource = new FluentResource(ftl);
+      const bundle = new FluentBundle(locale);
+      bundle.addResource(resource);
+      localizationCache.set(locale, new Localization(locale, bundle));
     }
 
     return /** @type Localization */ (localizationCache.get(locale));

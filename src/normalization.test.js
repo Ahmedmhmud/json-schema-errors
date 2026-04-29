@@ -7,7 +7,7 @@ import { Localization } from "./localization.js";
  * @import { OutputFormat } from "./index.js";
  */
 
-describe("Normalization", async () => {
+describe("Normalization", () => {
   const schemaUri = "https://example.com/main";
   const localization = Localization.forLocale("en-US");
 

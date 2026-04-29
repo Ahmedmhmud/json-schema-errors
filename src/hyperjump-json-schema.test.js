@@ -14,7 +14,7 @@ import "@hyperjump/json-schema/formats";
 import { BASIC } from "@hyperjump/json-schema/experimental";
 import { jsonSchemaErrors } from "../src/index.js";
 import { FluentBundle, FluentResource } from "@fluent/bundle";
-import { translations } from "./translations.js";
+import { translations } from "./translations/index.js";
 
 /**
  * @import { SchemaObject } from "@hyperjump/json-schema"

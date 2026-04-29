@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, describe, expect, test } from "vitest";
-import { translations } from "./translations.js";
+import { translations } from "./translations/index.js";
 import { Localization } from "./localization.js";
 
 describe("Localization", () => {

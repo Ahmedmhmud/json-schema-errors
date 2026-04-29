@@ -1,4 +1,4 @@
-export const enUS = `
+export default `
 // Any type keywords
 boolean-schema-message = A value is not allowed here
 type-message = Expected a {$expectedTypes}

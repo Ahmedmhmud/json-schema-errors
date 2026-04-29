@@ -254,8 +254,8 @@ export const validate = async (schemaUri, instance, options) => {
   }
 };
 
-/** @type (compiledSchema: CompiledSchema, instance: API.Json, options?: API.ValidationOptions) => Promise<API.ValidationResult> */
-const evaluateCompiledSchema = async (compiledSchema, instance, options = {}) => {
+/** @type (compiledSchema: CompiledSchema, instance: API.Json, options?: API.ValidationOptions) => API.ValidationResult */
+const evaluateCompiledSchema = (compiledSchema, instance, options = {}) => {
   const localization = Localization.forLocale(options.locale ?? "en-US");
   const jsonNode = Instance.fromJs(instance);
   const outputPlugin = new JsonSchemaErrorsOutputPlugin();
